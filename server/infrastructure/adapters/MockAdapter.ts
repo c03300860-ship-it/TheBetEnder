@@ -1,4 +1,5 @@
 import { Token, Pool } from "../../domain/entities";
+import { SUPPORTED_TOKENS } from "../../../shared/tokens";
 
 export interface IChainAdapter {
   getChainName(): string;
@@ -12,23 +13,26 @@ export class MockAdapter implements IChainAdapter {
   private tokens: Token[];
 
   constructor(chainName: string) {
-    this.chainName = chainName;
+    this.chainName = chainName.toLowerCase();
     
-    // Mock Data Setup
+    const metadata = SUPPORTED_TOKENS[this.chainName] || [];
+    
+    // Find USDC or first token as stable for mock purposes
+    const stableMeta = metadata.find(t => t.symbol === "USDC") || metadata[0];
+    
     this.stableToken = {
-      symbol: "USDC",
-      name: "USD Coin",
-      address: `0xUSDC_${chainName}`,
-      decimals: 6
+      symbol: stableMeta.symbol,
+      name: stableMeta.name,
+      address: stableMeta.address,
+      decimals: stableMeta.decimals
     };
 
-    this.tokens = [
-      { symbol: "WETH", name: "Wrapped Ether", address: `0xWETH_${chainName}`, decimals: 18 },
-      { symbol: "WBTC", name: "Wrapped Bitcoin", address: `0xWBTC_${chainName}`, decimals: 8 },
-      { symbol: "UNI", name: "Uniswap", address: `0xUNI_${chainName}`, decimals: 18 },
-      { symbol: "AAVE", name: "Aave", address: `0xAAVE_${chainName}`, decimals: 18 },
-      { symbol: "LINK", name: "Chainlink", address: `0xLINK_${chainName}`, decimals: 18 },
-    ];
+    this.tokens = metadata.filter(t => t.address !== this.stableToken.address).map(t => ({
+      symbol: t.symbol,
+      name: t.name,
+      address: t.address,
+      decimals: t.decimals
+    }));
   }
 
   getChainName(): string {

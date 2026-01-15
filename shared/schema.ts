@@ -7,6 +7,7 @@ export const tokenSchema = z.object({
   name: z.string(),
   address: z.string(),
   decimals: z.number(),
+  logoURI: z.string().optional(),
 });
 
 export const tokenEntrySchema = z.object({
