@@ -24,7 +24,7 @@ export function computeSpotPrice(
   const token = isToken0 ? pool.token0 : pool.token1;
   const stable = isToken0 ? pool.token1 : pool.token0;
 
-  if (tokenReserve === 0n) return 0;
+  if (tokenReserve === BigInt(0)) return 0;
 
   // Convert BigInts to numbers for division (prototype accuracy)
   // In production, use a BigNumber library for precision.
