@@ -1,18 +1,47 @@
 import { IChainAdapter } from "../../infrastructure/adapters/MockAdapter";
-import { ChainSnapshot, SnapshotEntry } from "../../domain/entities";
+import { ChainSnapshot, SnapshotEntry, Token } from "../../domain/entities";
 import { computeSpotPrice, computeLiquidityUSD } from "../../domain/pricing";
-import { SUPPORTED_TOKENS } from "../../../shared/tokens";
+import { SUPPORTED_TOKENS, TokenMetadata } from "../../../shared/tokens";
 
 export class SnapshotService {
   private adapters: Map<string, IChainAdapter>;
-  private cache: Map<string, ChainSnapshot>;
+  private cache: Map<string, any>;
   private isUpdating: Map<string, boolean>;
+  private dynamicTokens: Map<string, TokenMetadata[]>;
 
   constructor(adapters: IChainAdapter[]) {
     this.adapters = new Map();
     this.cache = new Map();
     this.isUpdating = new Map();
+    this.dynamicTokens = new Map();
     adapters.forEach(adapter => this.adapters.set(adapter.getChainName().toLowerCase(), adapter));
+    
+    // Initial fetch of external token lists
+    this.refreshDynamicTokens();
+  }
+
+  private async refreshDynamicTokens() {
+    try {
+      console.log("Refreshing dynamic token lists...");
+      
+      // Ethereum - Trust Wallet
+      const ethRes = await fetch("https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/tokenlist.json");
+      if (ethRes.ok) {
+        const data = await ethRes.json();
+        this.dynamicTokens.set("ethereum", data.tokens || []);
+      }
+
+      // Polygon - Official List
+      const polyRes = await fetch("https://raw.githubusercontent.com/maticnetwork/polygon-token-list/master/src/tokens/defaultTokens.json");
+      if (polyRes.ok) {
+        const data = await polyRes.json();
+        this.dynamicTokens.set("polygon", data || []);
+      }
+      
+      console.log(`Loaded ${this.dynamicTokens.get("ethereum")?.length} ETH and ${this.dynamicTokens.get("polygon")?.length} Polygon tokens.`);
+    } catch (e) {
+      console.error("Failed to fetch dynamic tokens:", e);
+    }
   }
 
   async generateSnapshot(chain: string, offset: number = 0, limit: number = 25): Promise<ChainSnapshot> {
@@ -22,8 +51,15 @@ export class SnapshotService {
       throw new Error(`No adapter found for chain: ${chain}`);
     }
 
-    const metadata = SUPPORTED_TOKENS[chainKey] || [];
-    const windowedMetadata = metadata.slice(offset, offset + limit);
+    // Merge static and dynamic tokens
+    const staticMeta = SUPPORTED_TOKENS[chainKey] || [];
+    const dynamicMeta = this.dynamicTokens.get(chainKey) || [];
+    
+    // De-duplicate by address
+    const seen = new Set(staticMeta.map(t => t.address.toLowerCase()));
+    const allMetadata = [...staticMeta, ...dynamicMeta.filter(t => !seen.has(t.address.toLowerCase()))];
+
+    const windowedMetadata = allMetadata.slice(offset, offset + limit);
 
     // Filter tokens that need updating (stale or missing)
     const now = Date.now();

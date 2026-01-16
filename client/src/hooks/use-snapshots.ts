@@ -21,8 +21,8 @@ export function useSnapshot(chain: string) {
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       const nextOffset = allPages.length * 25;
-      // We assume there are 1000 tokens in the registry
-      return nextOffset < 1000 ? nextOffset : undefined;
+      // Handle infinite pagination based on returned items
+      return lastPage.entries.length === 25 ? nextOffset : undefined;
     },
     refetchInterval: 10000,
     staleTime: 5000,
