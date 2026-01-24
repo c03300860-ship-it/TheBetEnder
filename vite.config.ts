@@ -7,8 +7,8 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Use the PORT environment variable provided by the platform, default to 3001
-const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
+// The backend server will run on port 3001 by default
+const backendPort = 3001;
 
 export default defineConfig(async () => ({
   plugins: [
@@ -36,14 +36,13 @@ export default defineConfig(async () => ({
     emptyOutDir: true,
   },
   server: {
-    // Run on the port specified by the environment variable
-    port: port,
     // Listen on all network interfaces, which is required for previews to work
     host: "0.0.0.0",
+    // The vite dev server will run on port 5173 (Vite's default)
+    // The proxy will forward requests to the backend on port 3001
     proxy: {
-      // Proxy API requests to the backend server
       '/api': {
-        target: `http://localhost:${port}`,
+        target: `http://localhost:${backendPort}`,
         changeOrigin: true,
       },
     },
