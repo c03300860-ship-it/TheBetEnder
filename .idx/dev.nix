@@ -14,13 +14,13 @@
 
   idx.previews = {
     previews = {
-      client = {
+      web = {
         command = [ "npm" "run" "dev:client" ];
         manager = "web";
       };
       server = {
         command = [ "npm" "run" "dev:server" ];
-        manager = "process";
+        manager = "web";
       };
     };
   };
