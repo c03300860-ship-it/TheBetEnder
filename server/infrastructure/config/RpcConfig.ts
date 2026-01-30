@@ -32,15 +32,23 @@ class RpcConfig {
   
   // Round-robin counters per chain
   private roundRobinCounters: Map<number, number> = new Map();
+  
+  // Track if we've initialized
+  private initialized: boolean = false;
 
   private constructor() {
-    this.initializeProviders();
-    this.initializeCounters();
+    // Don't initialize in constructor - do it lazily
   }
 
   public static getInstance(): RpcConfig {
     if (!RpcConfig.instance) {
       RpcConfig.instance = new RpcConfig();
+    }
+    // Initialize on first call to getInstance
+    if (!RpcConfig.instance.initialized) {
+      RpcConfig.instance.initializeProviders();
+      RpcConfig.instance.initializeCounters();
+      RpcConfig.instance.initialized = true;
     }
     return RpcConfig.instance;
   }
@@ -96,6 +104,15 @@ class RpcConfig {
     } else {
       console.log(`✓ RpcConfig: Initialized ${this.providers.length} RPC providers: ${this.getAvailableProviders().join(', ')}`);
     }
+  }
+
+  /**
+   * Reinitialize providers (useful after env vars are loaded)
+   */
+  public reinitialize(): void {
+    this.providers = [];
+    this.initializeProviders();
+    this.initializeCounters();
   }
 
   /**

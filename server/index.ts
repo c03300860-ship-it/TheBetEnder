@@ -1,3 +1,7 @@
+// Load .env file FIRST before any imports that use process.env
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import { registerRoutes } from './routes.ts';
 import { EthersAdapter } from './infrastructure/adapters/EthersAdapter';
@@ -10,6 +14,13 @@ import { priceViewerService } from './application/services/PriceViewerService.ts
 import { sharedStateCache } from './application/services/SharedStateCache.ts';
 import { SwapController } from './application/services/SwapController.ts';
 import { providersConfig } from './infrastructure/config/ProvidersConfig';
+import { rpcConfig } from './infrastructure/config/RpcConfig';
+import { explorerConfig } from './infrastructure/config/ExplorerConfig';
+
+// Reinitialize config modules with loaded env vars
+rpcConfig.reinitialize();
+explorerConfig.reinitialize();
+providersConfig.reinitialize();
 
 const app = express();
 const server = http.createServer(app);

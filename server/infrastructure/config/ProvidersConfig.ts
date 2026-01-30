@@ -43,10 +43,32 @@ class ProvidersConfig {
   private polygonscanApiKey?: string;
   private polygonRpcUrl?: string;
 
+  // Track if we've initialized
+  private initialized: boolean = false;
+
   // ProvidersConfig is a thin facade that delegates to `rpcConfig` and `explorerConfig`.
   // It preserves the public API for backwards compatibility.
 
   private constructor() {
+    // Don't initialize in constructor - do it lazily
+  }
+
+  /**
+   * Get singleton instance
+   */
+  public static getInstance(): ProvidersConfig {
+    if (!ProvidersConfig.instance) {
+      ProvidersConfig.instance = new ProvidersConfig();
+    }
+    // Initialize on first call to getInstance
+    if (!ProvidersConfig.instance.initialized) {
+      ProvidersConfig.instance.doInitialize();
+      ProvidersConfig.instance.initialized = true;
+    }
+    return ProvidersConfig.instance;
+  }
+
+  private doInitialize(): void {
     // Load from environment variables (for status reporting)
     this.infuraApiKey = process.env.INFURA_API_KEY;
     this.alchemyApiKey = process.env.ALCHEMY_API_KEY;
@@ -59,13 +81,12 @@ class ProvidersConfig {
   }
 
   /**
-   * Get singleton instance
+   * Reinitialize configuration (useful after env vars are loaded)
    */
-  public static getInstance(): ProvidersConfig {
-    if (!ProvidersConfig.instance) {
-      ProvidersConfig.instance = new ProvidersConfig();
-    }
-    return ProvidersConfig.instance;
+  public reinitialize(): void {
+    this.initialized = false;
+    this.doInitialize();
+    this.initialized = true;
   }
 
   /**

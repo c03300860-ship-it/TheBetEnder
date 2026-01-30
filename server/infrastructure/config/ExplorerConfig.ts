@@ -33,14 +33,22 @@ class ExplorerConfig {
   
   // Explorer APIs per chain
   private explorers: Map<number, ExplorerApi> = new Map();
+  
+  // Track if we've initialized
+  private initialized: boolean = false;
 
   private constructor() {
-    this.initializeExplorers();
+    // Don't initialize in constructor - do it lazily
   }
 
   public static getInstance(): ExplorerConfig {
     if (!ExplorerConfig.instance) {
       ExplorerConfig.instance = new ExplorerConfig();
+    }
+    // Initialize on first call to getInstance
+    if (!ExplorerConfig.instance.initialized) {
+      ExplorerConfig.instance.initializeExplorers();
+      ExplorerConfig.instance.initialized = true;
     }
     return ExplorerConfig.instance;
   }
@@ -94,6 +102,14 @@ class ExplorerConfig {
     // });
 
     console.log(`✓ ExplorerConfig: Initialized ${this.explorers.size} block explorers`);
+  }
+
+  /**
+   * Reinitialize explorers (useful after env vars are loaded)
+   */
+  public reinitialize(): void {
+    this.explorers.clear();
+    this.initializeExplorers();
   }
 
   /**
