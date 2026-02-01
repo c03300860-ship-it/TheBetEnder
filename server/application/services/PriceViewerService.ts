@@ -34,12 +34,12 @@ class PriceViewerService {
    * @param chainId Network chain ID
    * @returns Record of token address → price, or null if tick consistency check fails
    */
-  public getSnapshots(
+  public async getSnapshots(
     tokens: Array<{ address: string; pricingPools: Array<{ pool: string; base: string }> }>,
     chainId: number
-  ): Record<string, number | null> {
+  ): Promise<Record<string, number | null>> {
     // PHASE 2: Register token interest with controller
-    poolController.handleTokenInterest(tokens);
+    poolController.handleTokenInterest(tokens, chainId);
 
     // PHASE 6: Collect tickIds from all pools used by these tokens
     const tickIds = new Set<string>();
@@ -68,7 +68,7 @@ class PriceViewerService {
     // Compute prices for each token
     const prices: Record<string, number | null> = {};
     for (const token of tokens) {
-      prices[token.address] = spotPricingEngine.computeSpotPrice(token.address, chainId);
+      prices[token.address] = await spotPricingEngine.computeSpotPrice(token.address, chainId);
     }
 
     return prices;

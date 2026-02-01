@@ -25,7 +25,7 @@ export class DiscoveryService {
     const polygonTokens: Token[] = await this.storageService.getTokensByNetwork(137);
     const tokens = [...ethTokens, ...polygonTokens];
 
-    // 1. Prime Token Metadata
+    // 1. Prime Token Metadata (with delays to avoid rate limiting)
     for (const token of tokens) {
       try {
         // Assuming EthersAdapter has a method to get token metadata
@@ -34,6 +34,8 @@ export class DiscoveryService {
       } catch (error: any) {
         console.error(`Error fetching metadata for ${token.symbol}:`, error.message);
       }
+      // Add delay between metadata fetches to avoid rate limiting
+      await this.delay(500);
     }
     console.log('Token metadata cache priming complete.');
 
@@ -87,7 +89,7 @@ export class DiscoveryService {
                 );
               }
               // Add delay between RPC calls to avoid rate limiting
-              await this.delay(100);
+              await this.delay(500);
             } catch (error: any) {
               // It's common for pools not to exist, so we can log this less verbosely
               // console.log(`Info: Pool not found for ${tokenA.symbol}-${tokenB.symbol} with fee ${fee}`);

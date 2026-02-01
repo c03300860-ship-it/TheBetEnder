@@ -128,6 +128,7 @@ class MarketViewerService {
     const price = await spotPricingEngine.computeSpotPrice(tokenAddress, chainId);
 
     // Build market data response
+    const hasValidPrice = price !== null && price > 0;
     const marketData: TokenMarketData = {
       address: tokenAddress,
       symbol: token.symbol,
@@ -139,12 +140,15 @@ class MarketViewerService {
       liquidity: 0, // Not tracked currently
       volume24h: 0, // Not tracked currently
       holders: 0, // Would come from explorer API if implemented
-      dataSource: (price && price > 0) ? 'multicall' : 'insufficient-data' as DataSource,
+      dataSource: hasValidPrice ? 'multicall' : 'insufficient-data' as DataSource,
       timestamp: Date.now(),
-      cachedUntil: Date.now() + this.DEFAULT_CACHE_TTL,
+      cachedUntil: Date.now() + (hasValidPrice ? this.DEFAULT_CACHE_TTL : 5000), // Short TTL for insufficient data
     };
 
-    this.setCacheEntry(cacheKey, marketData);
+    // Only cache data with valid prices to allow refresh when pool states become available
+    if (hasValidPrice) {
+      this.setCacheEntry(cacheKey, marketData);
+    }
     return marketData;
   }
 
@@ -176,7 +180,7 @@ class MarketViewerService {
 
     // HOT PATH INTEGRATION:
     // 1. Notify PoolController of token interest (deduplicates to pools)
-    poolController.handleTokenInterest(tokens);
+    poolController.handleTokenInterest(tokens, chainId);
     
     // 2. Start scheduler if needed
     await this.startSchedulerIfNeeded();

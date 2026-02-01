@@ -20,6 +20,7 @@ import { PricingRoute } from '../../domain/types';
  */
 export interface AlivePool {
   address: string;
+  chainId: number; // chain ID for this pool
   tier: "high" | "normal" | "low";
   nextRefresh: number; // timestamp when next refresh is due
   lastBlockSeen: number; // last block number from multicall results
@@ -46,28 +47,33 @@ export class PoolController {
    * Result: N token requests → M pool tracking entries (M ≤ N)
    * 
    * @param tokens Array of tokens with attached pricingPools metadata
+   * @param chainId Chain ID for the pools
    */
   public handleTokenInterest(
     tokens: Array<{ 
       address: string;
       pricingPools: PricingRoute[]
-    }>
+    }>,
+    chainId: number = 1
   ): void {
     for (const token of tokens) {
       // Each token may have multiple pricing routes (e.g., 2-hop pricing)
       for (const route of token.pricingPools) {
         const poolAddress = route.pool;
+        // Use chainId-prefixed key to avoid collisions between chains
+        const poolKey = `${chainId}:${poolAddress}`;
 
-        if (this.aliveSet.has(poolAddress)) {
+        if (this.aliveSet.has(poolKey)) {
           // Pool already tracked - extend its liveness
-          const pool = this.aliveSet.get(poolAddress)!;
+          const pool = this.aliveSet.get(poolKey)!;
           pool.lastRequestTime = Date.now();
           pool.requestCount++;
         } else {
           // New pool entering the alive set
           // Start with "high" tier (5s refresh) for new pools
-          this.aliveSet.set(poolAddress, {
+          this.aliveSet.set(poolKey, {
             address: poolAddress,
+            chainId: chainId,
             tier: "high",
             nextRefresh: Date.now() + 5000, // 5 seconds
             lastBlockSeen: 0,

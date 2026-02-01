@@ -58,13 +58,13 @@ export class PoolScheduler {
     console.log('🚀 Starting pool scheduler (tiered scheduling enabled)');
     this.isRunning = true;
 
-    // Main loop: check every 1 second for pools due refresh
-    // (Not 10s global interval - each pool has its own cadence)
+    // Main loop: check every 10 seconds for pools due refresh
+    // (Reduced from 1s to avoid hitting RPC rate limits on free tier)
     this.executionLoopIntervalId = setInterval(() => {
       this.executionLoop().catch(error => {
         console.error('❌ Error in scheduler execution loop:', error);
       });
-    }, 1000);
+    }, 10000);
   }
 
   /**
@@ -85,9 +85,29 @@ export class PoolScheduler {
       return; // Nothing to do
     }
 
-    // For now, assume all pools are on Ethereum (chainId=1)
-    // TODO: Track chainId per pool in AlivePool
-    const chainId = 1;
+    // Group pools by chainId
+    const poolsByChain = new Map<number, typeof poolsDue>();
+    for (const pool of poolsDue) {
+      const chainId = pool.chainId || 1; // Default to Ethereum if not set
+      if (!poolsByChain.has(chainId)) {
+        poolsByChain.set(chainId, []);
+      }
+      poolsByChain.get(chainId)!.push(pool);
+    }
+
+    // Process each chain
+    for (const [chainId, chainPools] of poolsByChain) {
+      await this.executeForChain(chainId, chainPools);
+    }
+  }
+
+  /**
+   * Execute multicall for a specific chain's pools
+   */
+  private async executeForChain(chainId: number, poolsDue: Array<{ address: string; chainId: number; tier: string; nextRefresh: number; lastBlockSeen: number; lastPrice: number; requestCount: number; lastRequestTime: number }>): Promise<void> {
+    if (poolsDue.length === 0) {
+      return;
+    }
 
     // PHASE 6: Generate unique tick ID for this refresh cycle
     const tickId = `tick_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;

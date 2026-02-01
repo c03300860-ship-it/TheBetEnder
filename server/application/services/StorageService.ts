@@ -1,7 +1,21 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { getAddress } from 'ethers';
 import { Token, Pool } from '../../domain/entities';
 import { PoolRegistry, QuarantineRegistry } from '../../domain/types';
+
+/**
+ * Normalize an address to valid EIP-55 checksum format
+ * Returns lowercase if checksum validation fails
+ */
+function normalizeAddress(address: string): string {
+  try {
+    return getAddress(address);
+  } catch {
+    // If checksum validation fails, return lowercase
+    return address.toLowerCase();
+  }
+}
 
 // Resolve data directory - use process.cwd() for better compatibility
 const DATA_DIR = path.join(process.cwd(), 'server', 'data');
@@ -33,11 +47,16 @@ export class StorageService {
   /**
    * Get tokens for a specific network
    * @param chainId Network chain ID (1 = Ethereum, 137 = Polygon)
-   * @returns Array of tokens for the network
+   * @returns Array of tokens for the network (with normalized addresses)
    */
   async getTokensByNetwork(chainId: number): Promise<Token[]> {
     const fileName = `tokens_${chainId === 1 ? 'ethereum' : 'polygon'}.json`;
-    return await this.read(fileName) as Token[];
+    const tokens = await this.read(fileName) as Token[];
+    // Normalize addresses to valid checksums
+    return tokens.map(token => ({
+      ...token,
+      address: normalizeAddress(token.address)
+    }));
   }
 
   /**
