@@ -442,6 +442,10 @@
       {
         "pool": "0x6958686b6348c3D6d5f2dCA3106A5C09C156873a",
         "base": "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      },
+      {
+        "pool": "0xbb256c2F1B677e27118b0345FD2b3894D2E6D487",
+        "base": "0xdAC17F958D2ee523a2206206994597C13D831ec7"
       }
     ],
     "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": [
@@ -946,6 +950,10 @@
       {
         "pool": "0x4773E2C1c0B400a16DfeC4ca6E305141859a5542",
         "base": "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+      },
+      {
+        "pool": "0xbb256c2F1B677e27118b0345FD2b3894D2E6D487",
+        "base": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
       }
     ],
     "0x6b175474e89094c44da98b954eedeac495271d0f": [
